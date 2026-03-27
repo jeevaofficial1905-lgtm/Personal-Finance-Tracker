@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { X, Delete, Divide, Minus, Plus, X as Multiply, Equal } from 'lucide-react';
 
@@ -12,36 +12,47 @@ export function Calculator({ onClose }: CalculatorProps) {
   const [operator, setOperator] = useState<string | null>(null);
   const [waitingForOperand, setWaitingForOperand] = useState(false);
 
-  const inputDigit = (digit: string) => {
-    if (waitingForOperand) {
-      setDisplay(digit);
-      setWaitingForOperand(false);
-    } else {
-      setDisplay(display === '0' ? digit : display + digit);
-    }
-  };
+  const inputDigit = useCallback((digit: string) => {
+    setDisplay(prev => {
+      if (waitingForOperand) {
+        setWaitingForOperand(false);
+        return digit;
+      }
+      return prev === '0' ? digit : prev + digit;
+    });
+  }, [waitingForOperand]);
 
-  const inputDot = () => {
-    if (waitingForOperand) {
-      setDisplay('0.');
-      setWaitingForOperand(false);
-    } else if (!display.includes('.')) {
-      setDisplay(display + '.');
-    }
-  };
+  const inputDot = useCallback(() => {
+    setDisplay(prev => {
+      if (waitingForOperand) {
+        setWaitingForOperand(false);
+        return '0.';
+      }
+      if (!prev.includes('.')) {
+        return prev + '.';
+      }
+      return prev;
+    });
+  }, [waitingForOperand]);
 
-  const clearAll = () => {
+  const clearAll = useCallback(() => {
     setDisplay('0');
     setPrevValue(null);
     setOperator(null);
     setWaitingForOperand(false);
+  }, []);
+
+  const calculate = (prev: number, current: number, op: string) => {
+    switch (op) {
+      case '+': return prev + current;
+      case '-': return prev - current;
+      case '*': return prev * current;
+      case '/': return prev / current;
+      default: return current;
+    }
   };
 
-  const clearDisplay = () => {
-    setDisplay('0');
-  };
-
-  const performOperation = (nextOperator: string) => {
+  const performOperation = useCallback((nextOperator: string) => {
     const inputValue = parseFloat(display);
 
     if (prevValue === null) {
@@ -55,19 +66,9 @@ export function Calculator({ onClose }: CalculatorProps) {
 
     setWaitingForOperand(true);
     setOperator(nextOperator);
-  };
+  }, [display, prevValue, operator]);
 
-  const calculate = (prev: number, current: number, op: string) => {
-    switch (op) {
-      case '+': return prev + current;
-      case '-': return prev - current;
-      case '*': return prev * current;
-      case '/': return prev / current;
-      default: return current;
-    }
-  };
-
-  const handleEqual = () => {
+  const handleEqual = useCallback(() => {
     const inputValue = parseFloat(display);
     if (operator && prevValue !== null) {
       const newValue = calculate(prevValue, inputValue, operator);
@@ -76,15 +77,59 @@ export function Calculator({ onClose }: CalculatorProps) {
       setOperator(null);
       setWaitingForOperand(true);
     }
-  };
+  }, [display, operator, prevValue]);
 
-  const toggleSign = () => {
-    setDisplay(String(parseFloat(display) * -1));
-  };
+  const toggleSign = useCallback(() => {
+    setDisplay(prev => String(parseFloat(prev) * -1));
+  }, []);
 
-  const inputPercent = () => {
-    setDisplay(String(parseFloat(display) / 100));
-  };
+  const inputPercent = useCallback(() => {
+    setDisplay(prev => String(parseFloat(prev) / 100));
+  }, []);
+
+  const handleBackspace = useCallback(() => {
+    setDisplay(prev => {
+      if (prev.length > 1) {
+        return prev.slice(0, -1);
+      }
+      return '0';
+    });
+  }, []);
+
+  // Keyboard support
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Prevent default behavior for some keys to avoid page scrolling/etc
+      if (['/', '*', '-', '+', 'Enter', '=', 'Backspace', 'Escape'].includes(e.key)) {
+        e.preventDefault();
+      }
+
+      if (e.key >= '0' && e.key <= '9') {
+        inputDigit(e.key);
+      } else if (e.key === '.') {
+        inputDot();
+      } else if (e.key === '+') {
+        performOperation('+');
+      } else if (e.key === '-') {
+        performOperation('-');
+      } else if (e.key === '*') {
+        performOperation('*');
+      } else if (e.key === '/') {
+        performOperation('/');
+      } else if (e.key === 'Enter' || e.key === '=') {
+        handleEqual();
+      } else if (e.key === 'Escape' || e.key.toLowerCase() === 'c') {
+        clearAll();
+      } else if (e.key === 'Backspace') {
+        handleBackspace();
+      } else if (e.key === '%') {
+        inputPercent();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [inputDigit, inputDot, performOperation, handleEqual, clearAll, handleBackspace, inputPercent]);
 
   return (
     <motion.div

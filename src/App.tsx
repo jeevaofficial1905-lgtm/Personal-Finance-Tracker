@@ -30,6 +30,8 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'budgets' | 'debts' | 'transactions' | 'investments' | 'creditors' | 'trends'>('dashboard');
   const [authError, setAuthError] = useState<string | null>(null);
+  const [staySignedIn, setStaySignedIn] = useState(true);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   // Data states
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -63,15 +65,19 @@ export default function App() {
         try {
           const userSnap = await getDoc(userRef);
           
+          const profileUpdate: any = {
+            uid: user.uid,
+            email: user.email || '',
+            displayName: user.displayName || '',
+            photoURL: user.photoURL || '',
+            lastLogin: new Date().toISOString(),
+          };
+
           if (!userSnap.exists()) {
-            const profile: UserProfile = {
-              uid: user.uid,
-              email: user.email || '',
-              displayName: user.displayName || '',
-              photoURL: user.photoURL || '',
-              createdAt: new Date().toISOString(),
-            };
-            await setDoc(userRef, profile);
+            profileUpdate.createdAt = new Date().toISOString();
+            await setDoc(userRef, profileUpdate);
+          } else {
+            await setDoc(userRef, { lastLogin: profileUpdate.lastLogin }, { merge: true });
           }
         } catch (error) {
           handleFirestoreError(error, OperationType.WRITE, `users/${user.uid}`);
@@ -141,6 +147,9 @@ export default function App() {
     provider.setCustomParameters({ prompt: 'select_account' });
     
     try {
+      // Set persistence based on toggle
+      await setPersistence(auth, staySignedIn ? browserLocalPersistence : { type: 'SESSION' } as any);
+      
       // Always try popup first - it's more reliable for state preservation
       await signInWithPopup(auth, provider);
     } catch (error: any) {
@@ -226,6 +235,17 @@ export default function App() {
           </div>
 
           <div className="space-y-4">
+            <div className="flex items-center justify-center gap-2 text-sm text-[var(--color-muted)] mb-2">
+              <input 
+                type="checkbox" 
+                id="staySignedIn" 
+                checked={staySignedIn} 
+                onChange={(e) => setStaySignedIn(e.target.checked)}
+                className="w-4 h-4 rounded border-[var(--color-border)] text-[var(--color-accent)] focus:ring-[var(--color-accent)]"
+              />
+              <label htmlFor="staySignedIn" className="cursor-pointer select-none">Stay signed in for 30 days</label>
+            </div>
+            
             <button
               onClick={handleLogin}
               className="w-full py-4 bg-[var(--color-accent)] text-white font-semibold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 group shadow-sm"

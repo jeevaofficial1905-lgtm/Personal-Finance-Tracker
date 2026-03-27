@@ -4,6 +4,7 @@ export interface UserProfile {
   displayName?: string;
   photoURL?: string;
   createdAt?: string;
+  lastLogin?: string;
 }
 
 export interface Budget {

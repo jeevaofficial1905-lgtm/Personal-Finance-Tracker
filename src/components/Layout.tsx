@@ -10,7 +10,8 @@ import {
   Menu,
   X,
   Calculator as CalculatorIcon,
-  TrendingUp
+  TrendingUp,
+  Users
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -32,6 +33,7 @@ export function Layout({ user, activeTab, setActiveTab, onLogout, children }: La
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'budgets', label: 'Budgets', icon: PieChart },
     { id: 'investments', label: 'Investments', icon: TrendingUp },
+    { id: 'creditors', label: 'People', icon: Users },
     { id: 'debts', label: 'Debts & Loans', icon: CreditCard },
     { id: 'transactions', label: 'Transactions', icon: History },
   ];

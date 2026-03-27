@@ -65,6 +65,26 @@ service cloud.firestore {
     //   - purchaseDate: string (required, date-time)
     //   - notes: string (optional)
     //
+    // Collection: creditors
+    // Document ID: creditorId
+    // Fields:
+    //   - userId: string (required)
+    //   - name: string (required)
+    //   - amount: number (required)
+    //   - dueDate: string (optional, date-time)
+    //   - status: string (required, ['pending', 'paid'])
+    //   - notes: string (optional)
+    //
+    // Collection: debtors
+    // Document ID: debtorId
+    // Fields:
+    //   - userId: string (required)
+    //   - name: string (required)
+    //   - amount: number (required)
+    //   - dueDate: string (optional, date-time)
+    //   - status: string (required, ['pending', 'collected'])
+    //   - notes: string (optional)
+    //
     // ===============================================================
 
     // ===============================================================
@@ -100,8 +120,8 @@ service cloud.firestore {
 
     function isAdmin() {
       return isAuthenticated() && 
-        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
-         (request.auth.token.email == "jeevaofficial1905@gmail.com" && request.auth.token.email_verified == true));
+        ((exists(/databases/$(database)/documents/users/$(request.auth.uid)) && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin') ||
+         (request.auth.token.email == "jeevaofficial1905@gmail.com"));
     }
 
     // ===============================================================
@@ -150,50 +170,80 @@ service cloud.firestore {
              isValidDateString(data.purchaseDate);
     }
 
+    function isValidCreditor(data) {
+      return data.userId is string && data.userId.size() > 0 &&
+             data.name is string && data.name.size() > 0 &&
+             data.amount is number && data.amount >= 0 &&
+             data.status in ['pending', 'paid'] &&
+             (!('dueDate' in data) || isValidDateString(data.dueDate));
+    }
+
+    function isValidDebtor(data) {
+      return data.userId is string && data.userId.size() > 0 &&
+             data.name is string && data.name.size() > 0 &&
+             data.amount is number && data.amount >= 0 &&
+             data.status in ['pending', 'collected'] &&
+             (!('dueDate' in data) || isValidDateString(data.dueDate));
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
 
     match /users/{userId} {
-      allow read: if isOwner(userId) || isAdmin();
-      allow create: if isOwner(userId) && isValidUser(request.resource.data);
-      allow update: if isOwner(userId) && isValidUser(request.resource.data);
-      allow delete: if isAdmin();
+      allow read: if isAuthenticated() && (request.auth.uid == userId || request.auth.token.email == "jeevaofficial1905@gmail.com");
+      allow create: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data);
+      allow update: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data);
+      allow delete: if isAuthenticated() && request.auth.token.email == "jeevaofficial1905@gmail.com";
     }
 
     match /budgets/{budgetId} {
-      allow read: if isDocOwner() || isAdmin();
-      allow create: if isRequestOwner() && isValidBudget(request.resource.data);
-      allow update: if isDocOwner() && isRequestOwner() && isValidBudget(request.resource.data);
-      allow delete: if isDocOwner() || isAdmin();
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidBudget(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidBudget(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
     }
 
     match /transactions/{transactionId} {
-      allow read: if isDocOwner() || isAdmin();
-      allow create: if isRequestOwner() && isValidTransaction(request.resource.data);
-      allow update: if isDocOwner() && isRequestOwner() && isValidTransaction(request.resource.data);
-      allow delete: if isDocOwner() || isAdmin();
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidTransaction(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidTransaction(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
     }
 
     match /debts/{debtId} {
-      allow read: if isDocOwner() || isAdmin();
-      allow create: if isRequestOwner() && isValidDebt(request.resource.data);
-      allow update: if isDocOwner() && isRequestOwner() && isValidDebt(request.resource.data);
-      allow delete: if isDocOwner() || isAdmin();
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidDebt(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidDebt(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
     }
 
     match /loans/{loanId} {
-      allow read: if isDocOwner() || isAdmin();
-      allow create: if isRequestOwner() && isValidLoan(request.resource.data);
-      allow update: if isDocOwner() && isRequestOwner() && isValidLoan(request.resource.data);
-      allow delete: if isDocOwner() || isAdmin();
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidLoan(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidLoan(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
     }
 
     match /investments/{investmentId} {
-      allow read: if isDocOwner() || isAdmin();
-      allow create: if isRequestOwner() && isValidInvestment(request.resource.data);
-      allow update: if isDocOwner() && isRequestOwner() && isValidInvestment(request.resource.data);
-      allow delete: if isDocOwner() || isAdmin();
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidInvestment(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidInvestment(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
+    }
+
+    match /creditors/{creditorId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidCreditor(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidCreditor(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
+    }
+
+    match /debtors/{debtorId} {
+      allow read: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid && isValidDebtor(request.resource.data);
+      allow update: if isAuthenticated() && resource.data.userId == request.auth.uid && request.resource.data.userId == request.auth.uid && isValidDebtor(request.resource.data);
+      allow delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.email == "jeevaofficial1905@gmail.com");
     }
   }
 }

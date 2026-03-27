@@ -83,6 +83,34 @@
         "notes": { "type": "string" }
       },
       "required": ["userId", "name", "type", "amountInvested", "currentValue", "purchaseDate"]
+    },
+    "Creditor": {
+      "title": "Creditor",
+      "description": "A person or entity the user owes money to.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "amount": { "type": "number" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "paid"] },
+        "notes": { "type": "string" }
+      },
+      "required": ["userId", "name", "amount", "status"]
+    },
+    "Debtor": {
+      "title": "Debtor",
+      "description": "A person or entity who owes money to the user.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "amount": { "type": "number" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "status": { "type": "string", "enum": ["pending", "collected"] },
+        "notes": { "type": "string" }
+      },
+      "required": ["userId", "name", "amount", "status"]
     }
   },
   "firestore": {
@@ -109,6 +137,14 @@
     "/investments/{investmentId}": {
       "schema": "Investment",
       "description": "User investments."
+    },
+    "/creditors/{creditorId}": {
+      "schema": "Creditor",
+      "description": "Money owed to others."
+    },
+    "/debtors/{debtorId}": {
+      "schema": "Debtor",
+      "description": "Money owed by others."
     }
   }
 }

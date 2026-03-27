@@ -1,4 +1,4 @@
-import { Budget, Transaction, Debt, Loan, Investment } from '../types';
+import { Budget, Transaction, Debt, Loan, Investment, Creditor, Debtor } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { 
   TrendingUp, 
@@ -7,7 +7,8 @@ import {
   ArrowUpRight, 
   ArrowDownRight,
   AlertCircle,
-  Briefcase
+  Briefcase,
+  Users
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -29,9 +30,11 @@ interface DashboardProps {
   debts: Debt[];
   loans: Loan[];
   investments: Investment[];
+  creditors: Creditor[];
+  debtors: Debtor[];
 }
 
-export function Dashboard({ budgets, transactions, debts, loans, investments }: DashboardProps) {
+export function Dashboard({ budgets, transactions, debts, loans, investments, creditors, debtors }: DashboardProps) {
   const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((acc, t) => acc + t.amount, 0);
@@ -44,12 +47,18 @@ export function Dashboard({ budgets, transactions, debts, loans, investments }: 
 
   const totalDebt = debts.reduce((acc, d) => acc + d.remainingAmount, 0);
   const totalLoans = loans.reduce((acc, l) => acc + l.principal, 0);
+  const totalCreditors = creditors
+    .filter(c => c.status === 'pending')
+    .reduce((acc, c) => acc + c.amount, 0);
+  const totalDebtors = debtors
+    .filter(d => d.status === 'pending')
+    .reduce((acc, d) => acc + d.amount, 0);
 
   const totalInvested = investments.reduce((acc, inv) => acc + inv.amountInvested, 0);
   const totalInvestmentValue = investments.reduce((acc, inv) => acc + inv.currentValue, 0);
   const investmentGain = totalInvestmentValue - totalInvested;
 
-  const netWorth = balance + totalInvestmentValue - totalDebt - totalLoans;
+  const netWorth = balance + totalInvestmentValue + totalDebtors - totalDebt - totalLoans - totalCreditors;
 
   // Chart data: Expenses by category
   const expensesByCategory = transactions
@@ -179,15 +188,23 @@ export function Dashboard({ budgets, transactions, debts, loans, investments }: 
 
       {/* Debt & Loans Overview */}
       <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-8 space-y-6 shadow-sm">
-        <h3 className="text-xl font-semibold font-serif">Liabilities</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+        <h3 className="text-xl font-semibold font-serif">Liabilities & Receivables</h3>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="space-y-2">
-            <p className="text-sm text-[var(--color-muted)] uppercase tracking-wider font-semibold">Total Debt</p>
-            <p className="text-4xl font-bold text-rose-600">{formatCurrency(totalDebt)}</p>
+            <p className="text-xs text-[var(--color-muted)] uppercase tracking-wider font-semibold">Total Debt</p>
+            <p className="text-3xl font-bold text-rose-600">{formatCurrency(totalDebt)}</p>
           </div>
           <div className="space-y-2">
-            <p className="text-sm text-[var(--color-muted)] uppercase tracking-wider font-semibold">Active Loans</p>
-            <p className="text-4xl font-bold text-amber-600">{formatCurrency(totalLoans)}</p>
+            <p className="text-xs text-[var(--color-muted)] uppercase tracking-wider font-semibold">Active Loans</p>
+            <p className="text-3xl font-bold text-amber-600">{formatCurrency(totalLoans)}</p>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs text-[var(--color-muted)] uppercase tracking-wider font-semibold">I Owe People</p>
+            <p className="text-3xl font-bold text-rose-400">{formatCurrency(totalCreditors)}</p>
+          </div>
+          <div className="space-y-2">
+            <p className="text-xs text-[var(--color-muted)] uppercase tracking-wider font-semibold">People Owe Me</p>
+            <p className="text-3xl font-bold text-emerald-600">{formatCurrency(totalDebtors)}</p>
           </div>
         </div>
       </div>

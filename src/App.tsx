@@ -17,6 +17,7 @@ import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { BudgetTracker } from './components/BudgetTracker';
 import { DebtTracker } from './components/DebtTracker';
+import { CreditorTracker } from './components/CreditorTracker';
 import { TransactionList } from './components/TransactionList';
 import { InvestmentTracker } from './components/InvestmentTracker';
 import { LogIn, Wallet, AlertCircle } from 'lucide-react';
@@ -26,7 +27,7 @@ export default function App() {
   console.log('WealthTrack: App component is rendering');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'budgets' | 'debts' | 'transactions' | 'investments'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'budgets' | 'debts' | 'transactions' | 'investments' | 'creditors'>('dashboard');
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Data states
@@ -35,6 +36,8 @@ export default function App() {
   const [debts, setDebts] = useState<Debt[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
   const [investments, setInvestments] = useState<Investment[]>([]);
+  const [creditors, setCreditors] = useState<Creditor[]>([]);
+  const [debtors, setDebtors] = useState<Debtor[]>([]);
 
   useEffect(() => {
     // Set persistence for better mobile support
@@ -110,12 +113,24 @@ export default function App() {
       setInvestments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Investment)));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'investments'));
 
+    const qCreditors = query(collection(db, 'creditors'), where('userId', '==', user.uid));
+    const unsubCreditors = onSnapshot(qCreditors, (snapshot) => {
+      setCreditors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Creditor)));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'creditors'));
+
+    const qDebtors = query(collection(db, 'debtors'), where('userId', '==', user.uid));
+    const unsubDebtors = onSnapshot(qDebtors, (snapshot) => {
+      setDebtors(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Debtor)));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'debtors'));
+
     return () => {
       unsubBudgets();
       unsubTransactions();
       unsubDebts();
       unsubLoans();
       unsubInvestments();
+      unsubCreditors();
+      unsubDebtors();
     };
   }, [user]);
 
@@ -268,6 +283,8 @@ export default function App() {
               debts={debts} 
               loans={loans} 
               investments={investments}
+              creditors={creditors}
+              debtors={debtors}
             />
           </motion.div>
         )}
@@ -324,6 +341,20 @@ export default function App() {
               onAdd={addInvestment}
               onDelete={deleteInvestment}
               onUpdateValue={updateInvestmentValue}
+            />
+          </motion.div>
+        )}
+        {activeTab === 'creditors' && (
+          <motion.div
+            key="creditors"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <CreditorTracker 
+              userId={user.uid}
+              creditors={creditors}
+              debtors={debtors}
             />
           </motion.div>
         )}

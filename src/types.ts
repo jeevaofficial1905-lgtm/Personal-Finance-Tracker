@@ -56,3 +56,23 @@ export interface Investment {
   purchaseDate: string;
   notes?: string;
 }
+
+export interface Creditor {
+  id?: string;
+  userId: string;
+  name: string;
+  amount: number;
+  dueDate?: string;
+  status: 'pending' | 'paid';
+  notes?: string;
+}
+
+export interface Debtor {
+  id?: string;
+  userId: string;
+  name: string;
+  amount: number;
+  dueDate?: string;
+  status: 'pending' | 'collected';
+  notes?: string;
+}

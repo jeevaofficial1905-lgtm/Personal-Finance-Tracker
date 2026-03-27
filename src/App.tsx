@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react';
-import { onAuthStateChanged, signInWithPopup, GoogleAuthProvider, signOut, User } from 'firebase/auth';
+import { 
+  onAuthStateChanged, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  User,
+  getRedirectResult,
+  signInWithRedirect,
+  setPersistence,
+  browserLocalPersistence
+} from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
 import { UserProfile, Budget, Transaction, Debt, Loan } from './types';
@@ -8,7 +18,7 @@ import { Dashboard } from './components/Dashboard';
 import { BudgetTracker } from './components/BudgetTracker';
 import { DebtTracker } from './components/DebtTracker';
 import { TransactionList } from './components/TransactionList';
-import { LogIn, Wallet } from 'lucide-react';
+import { LogIn, Wallet, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
@@ -16,6 +26,7 @@ export default function App() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'budgets' | 'debts' | 'transactions'>('dashboard');
+  const [authError, setAuthError] = useState<string | null>(null);
 
   // Data states
   const [budgets, setBudgets] = useState<Budget[]>([]);
@@ -24,6 +35,21 @@ export default function App() {
   const [loans, setLoans] = useState<Loan[]>([]);
 
   useEffect(() => {
+    // Set persistence for better mobile support
+    setPersistence(auth, browserLocalPersistence);
+
+    // Handle redirect result for mobile browsers
+    getRedirectResult(auth).then((result) => {
+      if (result?.user) {
+        console.log('Redirect login successful');
+      }
+    }).catch((error) => {
+      console.error("Redirect auth error:", error);
+      if (error.code === 'auth/internal-error' || error.code === 'auth/network-request-failed') {
+        setAuthError("Mobile browser restriction detected. Please try opening in Safari or Chrome directly.");
+      }
+    });
+
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
         // Ensure user profile exists in Firestore
@@ -86,11 +112,32 @@ export default function App() {
   }, [user]);
 
   const handleLogin = async () => {
+    setAuthError(null);
     const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    
     try {
+      // Always try popup first - it's more reliable for state preservation
       await signInWithPopup(auth, provider);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Login failed:', error);
+      if (error.code === 'auth/popup-blocked' || error.code === 'auth/cancelled-popup-request') {
+        setAuthError("Popup was blocked. You can try 'Redirect Mode' below, but for the best experience, please open this page in Safari or Chrome directly.");
+      } else if (error.code === 'auth/network-request-failed') {
+        setAuthError("Network error. This often happens in 'In-App' browsers (like WhatsApp). Please tap the menu icon and 'Open in Browser'.");
+      } else {
+        setAuthError(error.message || "An unexpected error occurred.");
+      }
+    }
+  };
+
+  const handleRedirectLogin = async () => {
+    const provider = new GoogleAuthProvider();
+    provider.setCustomParameters({ prompt: 'select_account' });
+    try {
+      await signInWithRedirect(auth, provider);
+    } catch (error: any) {
+      setAuthError("Redirect failed: " + error.message);
     }
   };
 
@@ -125,13 +172,45 @@ export default function App() {
             <h1 className="text-4xl font-bold tracking-tight font-serif">WealthTrack</h1>
             <p className="text-[var(--color-muted)]">Master your finances. Track budgets, manage debts, and grow your wealth.</p>
           </div>
-          <button
-            onClick={handleLogin}
-            className="w-full py-4 bg-[var(--color-accent)] text-white font-semibold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 group shadow-sm"
-          >
-            <LogIn className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
-            Sign in with Google
-          </button>
+
+          <div className="space-y-4">
+            <button
+              onClick={handleLogin}
+              className="w-full py-4 bg-[var(--color-accent)] text-white font-semibold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 group shadow-sm"
+            >
+              <LogIn className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+              Sign in with Google
+            </button>
+
+            {authError && (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="p-5 bg-amber-50 border border-amber-200 rounded-2xl text-left space-y-4"
+              >
+                <div className="flex gap-3">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                  <div className="space-y-1">
+                    <p className="text-sm font-bold text-amber-900">Login Troubleshooting</p>
+                    <p className="text-xs text-amber-800 leading-relaxed">{authError}</p>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 gap-2">
+                  <button
+                    onClick={handleRedirectLogin}
+                    className="w-full py-2.5 bg-amber-600 text-white text-xs font-bold rounded-lg hover:bg-amber-700 transition-colors shadow-sm"
+                  >
+                    Try Redirect Mode
+                  </button>
+                  <div className="p-3 bg-white/50 rounded-lg border border-amber-100">
+                    <p className="text-[10px] text-amber-900 font-semibold uppercase tracking-wider mb-1">Best Solution:</p>
+                    <p className="text-[11px] text-amber-800">Tap the <span className="font-bold">...</span> or <span className="font-bold">Share</span> icon and select <span className="font-bold">"Open in Safari"</span> or <span className="font-bold">"Open in Chrome"</span>.</p>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </div>
         </motion.div>
       </div>
     );

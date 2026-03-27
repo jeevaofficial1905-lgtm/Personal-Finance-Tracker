@@ -20,6 +20,7 @@ import { DebtTracker } from './components/DebtTracker';
 import { CreditorTracker } from './components/CreditorTracker';
 import { TransactionList } from './components/TransactionList';
 import { InvestmentTracker } from './components/InvestmentTracker';
+import { IncomeExpenseManager } from './components/IncomeExpenseManager';
 import { LogIn, Wallet, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -27,7 +28,7 @@ export default function App() {
   console.log('WealthTrack: App component is rendering');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'budgets' | 'debts' | 'transactions' | 'investments' | 'creditors'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'budgets' | 'debts' | 'transactions' | 'investments' | 'creditors' | 'trends'>('dashboard');
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Data states
@@ -298,6 +299,18 @@ export default function App() {
             <BudgetTracker 
               userId={user.uid}
               budgets={budgets} 
+              transactions={transactions} 
+            />
+          </motion.div>
+        )}
+        {activeTab === 'trends' && (
+          <motion.div
+            key="trends"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <IncomeExpenseManager 
               transactions={transactions} 
             />
           </motion.div>

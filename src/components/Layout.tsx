@@ -11,7 +11,8 @@ import {
   X,
   Calculator as CalculatorIcon,
   TrendingUp,
-  Users
+  Users,
+  BarChart3
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'motion/react';
@@ -32,6 +33,7 @@ export function Layout({ user, activeTab, setActiveTab, onLogout, children }: La
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'budgets', label: 'Budgets', icon: PieChart },
+    { id: 'trends', label: 'Income vs Expense', icon: BarChart3 },
     { id: 'investments', label: 'Investments', icon: TrendingUp },
     { id: 'creditors', label: 'People', icon: Users },
     { id: 'debts', label: 'Debts & Loans', icon: CreditCard },

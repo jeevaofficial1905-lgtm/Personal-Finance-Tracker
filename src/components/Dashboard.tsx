@@ -56,7 +56,7 @@ export function Dashboard({ budgets, transactions, debts, loans }: DashboardProp
     value
   }));
 
-  const COLORS = ['#ffffff', '#888888', '#444444', '#222222', '#666666'];
+  const COLORS = ['#5A5A40', '#A0522D', '#708090', '#8FBC8F', '#BDB76B'];
 
   // Budget status
   const budgetStatus = budgets.map(b => {
@@ -77,8 +77,8 @@ export function Dashboard({ budgets, transactions, debts, loans }: DashboardProp
       className="space-y-8"
     >
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Overview</h1>
-        <p className="text-white/50">Your financial health at a glance.</p>
+        <h1 className="text-4xl font-bold tracking-tight font-serif">Overview</h1>
+        <p className="text-[var(--color-muted)]">Your financial health at a glance.</p>
       </header>
 
       {/* Stats Grid */}
@@ -93,20 +93,20 @@ export function Dashboard({ budgets, transactions, debts, loans }: DashboardProp
           title="Monthly Income" 
           value={totalIncome} 
           icon={TrendingUp}
-          color="text-emerald-400"
+          color="text-emerald-600"
         />
         <StatCard 
           title="Monthly Expenses" 
           value={totalExpenses} 
           icon={TrendingDown}
-          color="text-rose-400"
+          color="text-rose-600"
         />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Expenses Chart */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
-          <h3 className="text-xl font-semibold">Expenses by Category</h3>
+        <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-8 space-y-6 shadow-sm">
+          <h3 className="text-xl font-semibold font-serif">Expenses by Category</h3>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -124,8 +124,8 @@ export function Dashboard({ budgets, transactions, debts, loans }: DashboardProp
                   ))}
                 </Pie>
                 <Tooltip 
-                  contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '12px' }}
-                  itemStyle={{ color: '#fff' }}
+                  contentStyle={{ backgroundColor: 'var(--color-card)', border: '1px solid var(--color-border)', borderRadius: '12px' }}
+                  itemStyle={{ color: 'var(--color-foreground)' }}
                 />
               </PieChart>
             </ResponsiveContainer>
@@ -133,28 +133,28 @@ export function Dashboard({ budgets, transactions, debts, loans }: DashboardProp
         </div>
 
         {/* Budget Progress */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
-          <h3 className="text-xl font-semibold">Budget Progress</h3>
+        <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-8 space-y-6 shadow-sm">
+          <h3 className="text-xl font-semibold font-serif">Budget Progress</h3>
           <div className="space-y-6">
             {budgetStatus.length > 0 ? budgetStatus.map(b => (
               <div key={b.id} className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="font-medium">{b.category}</span>
-                  <span className="text-white/50">{formatCurrency(b.spent)} / {formatCurrency(b.limit)}</span>
+                  <span className="text-[var(--color-muted)]">{formatCurrency(b.spent)} / {formatCurrency(b.limit)}</span>
                 </div>
-                <div className="h-2 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-2 bg-[var(--color-border)]/50 rounded-full overflow-hidden">
                   <motion.div 
                     initial={{ width: 0 }}
                     animate={{ width: `${Math.min(b.percent, 100)}%` }}
                     className={cn(
                       "h-full rounded-full transition-all",
-                      b.percent > 90 ? "bg-rose-500" : b.percent > 70 ? "bg-amber-500" : "bg-white"
+                      b.percent > 90 ? "bg-rose-500" : b.percent > 70 ? "bg-amber-500" : "bg-[var(--color-accent)]"
                     )}
                   />
                 </div>
               </div>
             )) : (
-              <div className="flex flex-col items-center justify-center py-12 text-white/30 space-y-2">
+              <div className="flex flex-col items-center justify-center py-12 text-[var(--color-muted)]/50 space-y-2">
                 <AlertCircle className="w-8 h-8" />
                 <p>No budgets set yet.</p>
               </div>
@@ -164,16 +164,16 @@ export function Dashboard({ budgets, transactions, debts, loans }: DashboardProp
       </div>
 
       {/* Debt & Loans Overview */}
-      <div className="bg-white/5 border border-white/10 rounded-3xl p-8 space-y-6">
-        <h3 className="text-xl font-semibold">Liabilities</h3>
+      <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-8 space-y-6 shadow-sm">
+        <h3 className="text-xl font-semibold font-serif">Liabilities</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           <div className="space-y-2">
-            <p className="text-sm text-white/50 uppercase tracking-wider font-semibold">Total Debt</p>
-            <p className="text-4xl font-bold text-rose-400">{formatCurrency(totalDebt)}</p>
+            <p className="text-sm text-[var(--color-muted)] uppercase tracking-wider font-semibold">Total Debt</p>
+            <p className="text-4xl font-bold text-rose-600">{formatCurrency(totalDebt)}</p>
           </div>
           <div className="space-y-2">
-            <p className="text-sm text-white/50 uppercase tracking-wider font-semibold">Active Loans</p>
-            <p className="text-4xl font-bold text-amber-400">{formatCurrency(totalLoans)}</p>
+            <p className="text-sm text-[var(--color-muted)] uppercase tracking-wider font-semibold">Active Loans</p>
+            <p className="text-4xl font-bold text-amber-600">{formatCurrency(totalLoans)}</p>
           </div>
         </div>
       </div>
@@ -183,15 +183,15 @@ export function Dashboard({ budgets, transactions, debts, loans }: DashboardProp
 
 function StatCard({ title, value, icon: Icon, trend, color }: any) {
   return (
-    <div className="bg-white/5 border border-white/10 rounded-3xl p-6 space-y-4">
+    <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-6 space-y-4 shadow-sm">
       <div className="flex items-center justify-between">
-        <div className="w-10 h-10 bg-white/5 rounded-xl flex items-center justify-center border border-white/10">
-          <Icon className={cn("w-5 h-5", color || "text-white")} />
+        <div className="w-10 h-10 bg-[var(--color-background)] rounded-xl flex items-center justify-center border border-[var(--color-border)]">
+          <Icon className={cn("w-5 h-5", color || "text-[var(--color-accent)]")} />
         </div>
         {trend && (
           <div className={cn(
             "flex items-center gap-1 text-xs font-medium px-2 py-1 rounded-full",
-            trend === 'up' ? "bg-emerald-400/10 text-emerald-400" : "bg-rose-400/10 text-rose-400"
+            trend === 'up' ? "bg-emerald-100 text-emerald-700" : "bg-rose-100 text-rose-700"
           )}>
             {trend === 'up' ? <ArrowUpRight className="w-3 h-3" /> : <ArrowDownRight className="w-3 h-3" />}
             {trend === 'up' ? 'Positive' : 'Negative'}
@@ -199,7 +199,7 @@ function StatCard({ title, value, icon: Icon, trend, color }: any) {
         )}
       </div>
       <div>
-        <p className="text-sm text-white/50 font-medium">{title}</p>
+        <p className="text-sm text-[var(--color-muted)] font-medium">{title}</p>
         <p className="text-3xl font-bold tracking-tight">{formatCurrency(value)}</p>
       </div>
     </div>

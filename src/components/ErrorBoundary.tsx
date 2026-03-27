@@ -1,5 +1,4 @@
-import * as React from 'react';
-import { Component, ErrorInfo, ReactNode } from 'react';
+import React, { Component, ErrorInfo, ReactNode } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -40,18 +39,18 @@ export default class ErrorBoundary extends Component<Props, State> {
       }
 
       return (
-        <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white p-6">
-          <div className="max-w-md w-full bg-white/5 border border-white/10 rounded-3xl p-8 text-center space-y-6">
-            <div className="w-16 h-16 bg-rose-500/10 rounded-2xl flex items-center justify-center border border-rose-500/20 mx-auto">
-              <span className="text-rose-500 text-2xl font-bold">!</span>
+        <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)] text-[var(--color-foreground)] p-6">
+          <div className="max-w-md w-full bg-[var(--color-card)] border border-[var(--color-border)] rounded-3xl p-8 text-center space-y-6 shadow-sm">
+            <div className="w-16 h-16 bg-rose-50 rounded-2xl flex items-center justify-center border border-rose-100 mx-auto">
+              <span className="text-rose-600 text-2xl font-bold">!</span>
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl font-bold">Application Error</h2>
-              <p className="text-white/50">{errorMessage}</p>
+              <h2 className="text-2xl font-bold font-serif">Application Error</h2>
+              <p className="text-[var(--color-muted)]">{errorMessage}</p>
             </div>
             <button
               onClick={() => window.location.reload()}
-              className="w-full py-3 bg-white text-black font-bold rounded-xl hover:bg-white/90 transition-all"
+              className="w-full py-3 bg-[var(--color-accent)] text-white font-bold rounded-xl hover:opacity-90 transition-all shadow-sm"
             >
               Reload Application
             </button>

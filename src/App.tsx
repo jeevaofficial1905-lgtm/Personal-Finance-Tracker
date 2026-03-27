@@ -98,11 +98,11 @@ export default function App() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0a0a0a] text-white">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--color-background)] text-[var(--color-foreground)]">
         <motion.div
           animate={{ rotate: 360 }}
           transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-          className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full"
+          className="w-8 h-8 border-2 border-[var(--color-muted)]/20 border-t-[var(--color-accent)] rounded-full"
         />
       </div>
     );
@@ -110,24 +110,24 @@ export default function App() {
 
   if (!user) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a0a0a] text-white p-6">
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--color-background)] text-[var(--color-foreground)] p-6">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           className="text-center space-y-8 max-w-md"
         >
           <div className="flex justify-center">
-            <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center border border-white/10">
-              <Wallet className="w-8 h-8 text-white" />
+            <div className="w-16 h-16 bg-[var(--color-card)] rounded-2xl flex items-center justify-center border border-[var(--color-border)] shadow-sm">
+              <Wallet className="w-8 h-8 text-[var(--color-accent)]" />
             </div>
           </div>
           <div className="space-y-2">
-            <h1 className="text-4xl font-bold tracking-tight">WealthTrack</h1>
-            <p className="text-white/50">Master your finances. Track budgets, manage debts, and grow your wealth.</p>
+            <h1 className="text-4xl font-bold tracking-tight font-serif">WealthTrack</h1>
+            <p className="text-[var(--color-muted)]">Master your finances. Track budgets, manage debts, and grow your wealth.</p>
           </div>
           <button
             onClick={handleLogin}
-            className="w-full py-4 bg-white text-black font-semibold rounded-xl hover:bg-white/90 transition-all flex items-center justify-center gap-2 group"
+            className="w-full py-4 bg-[var(--color-accent)] text-white font-semibold rounded-xl hover:opacity-90 transition-all flex items-center justify-center gap-2 group shadow-sm"
           >
             <LogIn className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             Sign in with Google

@@ -1,0 +1,169 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: users
+    // Document ID: userId
+    // Fields:
+    //   - uid: string (required)
+    //   - email: string (required, email format)
+    //   - displayName: string (optional)
+    //   - photoURL: string (optional)
+    //   - createdAt: string (optional, date-time)
+    //
+    // Collection: budgets
+    // Document ID: budgetId
+    // Fields:
+    //   - userId: string (required)
+    //   - category: string (required)
+    //   - limit: number (required)
+    //   - spent: number (optional)
+    //   - period: string (optional)
+    //
+    // Collection: transactions
+    // Document ID: transactionId
+    // Fields:
+    //   - userId: string (required)
+    //   - amount: number (required)
+    //   - category: string (required)
+    //   - date: string (required, date-time)
+    //   - description: string (optional)
+    //   - type: string (required, ['income', 'expense'])
+    //
+    // Collection: debts
+    // Document ID: debtId
+    // Fields:
+    //   - userId: string (required)
+    //   - name: string (required)
+    //   - totalAmount: number (required)
+    //   - remainingAmount: number (required)
+    //   - dueDate: string (optional, date-time)
+    //   - interestRate: number (optional)
+    //
+    // Collection: loans
+    // Document ID: loanId
+    // Fields:
+    //   - userId: string (required)
+    //   - name: string (required)
+    //   - principal: number (required)
+    //   - interestRate: number (required)
+    //   - termMonths: number (required)
+    //   - startDate: string (optional, date-time)
+    //   - monthlyPayment: number (optional)
+    //
+    // ===============================================================
+
+    // ===============================================================
+    // Helper Functions
+    // ===============================================================
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isDocOwner() {
+      return isAuthenticated() && request.auth.uid == resource.data.userId;
+    }
+
+    function isRequestOwner() {
+      return isAuthenticated() && request.auth.uid == request.resource.data.userId;
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidDateString(dateStr) {
+      return dateStr is string && dateStr.matches("^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}.*Z?$");
+    }
+
+    function isAdmin() {
+      return isAuthenticated() && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+         (request.auth.token.email == "jeevaofficial1905@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    // ===============================================================
+    // Domain Validators
+    // ===============================================================
+
+    function isValidUser(data) {
+      return data.uid is string && data.uid.size() > 0 &&
+             data.email is string && isValidEmail(data.email);
+    }
+
+    function isValidBudget(data) {
+      return data.userId is string && data.userId.size() > 0 &&
+             data.category is string && data.category.size() > 0 &&
+             data.limit is number && data.limit >= 0;
+    }
+
+    function isValidTransaction(data) {
+      return data.userId is string && data.userId.size() > 0 &&
+             data.amount is number && data.amount >= 0 &&
+             data.type in ['income', 'expense'] &&
+             isValidDateString(data.date);
+    }
+
+    function isValidDebt(data) {
+      return data.userId is string && data.userId.size() > 0 &&
+             data.name is string && data.name.size() > 0 &&
+             data.totalAmount is number && data.totalAmount >= 0 &&
+             data.remainingAmount is number && data.remainingAmount >= 0;
+    }
+
+    function isValidLoan(data) {
+      return data.userId is string && data.userId.size() > 0 &&
+             data.name is string && data.name.size() > 0 &&
+             data.principal is number && data.principal >= 0 &&
+             data.interestRate is number && data.interestRate >= 0 &&
+             data.termMonths is number && data.termMonths > 0;
+    }
+
+    // ===============================================================
+    // Rules
+    // ===============================================================
+
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      allow create: if isOwner(userId) && isValidUser(request.resource.data);
+      allow update: if isOwner(userId) && isValidUser(request.resource.data);
+      allow delete: if isAdmin();
+    }
+
+    match /budgets/{budgetId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner() && isValidBudget(request.resource.data);
+      allow update: if isDocOwner() && isRequestOwner() && isValidBudget(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner() && isValidTransaction(request.resource.data);
+      allow update: if isDocOwner() && isRequestOwner() && isValidTransaction(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /debts/{debtId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner() && isValidDebt(request.resource.data);
+      allow update: if isDocOwner() && isRequestOwner() && isValidDebt(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /loans/{loanId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner() && isValidLoan(request.resource.data);
+      allow update: if isDocOwner() && isRequestOwner() && isValidLoan(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+  }
+}

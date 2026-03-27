@@ -1,0 +1,95 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "User Profile",
+      "description": "User's personal information and settings.",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email"]
+    },
+    "Budget": {
+      "title": "Budget",
+      "description": "Monthly budget for a specific category.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "category": { "type": "string" },
+        "limit": { "type": "number" },
+        "spent": { "type": "number" },
+        "period": { "type": "string" }
+      },
+      "required": ["userId", "category", "limit"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "A single financial transaction (income or expense).",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "amount": { "type": "number" },
+        "category": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "description": { "type": "string" },
+        "type": { "type": "string", "enum": ["income", "expense"] }
+      },
+      "required": ["userId", "amount", "type", "date"]
+    },
+    "Debt": {
+      "title": "Debt",
+      "description": "A debt that the user owes.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "totalAmount": { "type": "number" },
+        "remainingAmount": { "type": "number" },
+        "dueDate": { "type": "string", "format": "date-time" },
+        "interestRate": { "type": "number" }
+      },
+      "required": ["userId", "name", "totalAmount", "remainingAmount"]
+    },
+    "Loan": {
+      "title": "Loan",
+      "description": "A loan that the user is tracking.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "principal": { "type": "number" },
+        "interestRate": { "type": "number" },
+        "termMonths": { "type": "integer" },
+        "startDate": { "type": "string", "format": "date-time" },
+        "monthlyPayment": { "type": "number" }
+      },
+      "required": ["userId", "name", "principal", "interestRate", "termMonths"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile data."
+    },
+    "/budgets/{budgetId}": {
+      "schema": "Budget",
+      "description": "User-defined budgets."
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Financial transactions."
+    },
+    "/debts/{debtId}": {
+      "schema": "Debt",
+      "description": "User debts."
+    },
+    "/loans/{loanId}": {
+      "schema": "Loan",
+      "description": "User loans."
+    }
+  }
+}

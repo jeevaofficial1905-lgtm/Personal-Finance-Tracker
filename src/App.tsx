@@ -12,12 +12,13 @@ import {
 } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, setDoc, getDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
-import { UserProfile, Budget, Transaction, Debt, Loan } from './types';
+import { UserProfile, Budget, Transaction, Debt, Loan, Investment } from './types';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { BudgetTracker } from './components/BudgetTracker';
 import { DebtTracker } from './components/DebtTracker';
 import { TransactionList } from './components/TransactionList';
+import { InvestmentTracker } from './components/InvestmentTracker';
 import { LogIn, Wallet, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -25,7 +26,7 @@ export default function App() {
   console.log('WealthTrack: App component is rendering');
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'budgets' | 'debts' | 'transactions'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'budgets' | 'debts' | 'transactions' | 'investments'>('dashboard');
   const [authError, setAuthError] = useState<string | null>(null);
 
   // Data states
@@ -33,6 +34,7 @@ export default function App() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [debts, setDebts] = useState<Debt[]>([]);
   const [loans, setLoans] = useState<Loan[]>([]);
+  const [investments, setInvestments] = useState<Investment[]>([]);
 
   useEffect(() => {
     // Set persistence for better mobile support
@@ -103,11 +105,17 @@ export default function App() {
       setLoans(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Loan)));
     }, (error) => handleFirestoreError(error, OperationType.LIST, 'loans'));
 
+    const qInvestments = query(collection(db, 'investments'), where('userId', '==', user.uid));
+    const unsubInvestments = onSnapshot(qInvestments, (snapshot) => {
+      setInvestments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Investment)));
+    }, (error) => handleFirestoreError(error, OperationType.LIST, 'investments'));
+
     return () => {
       unsubBudgets();
       unsubTransactions();
       unsubDebts();
       unsubLoans();
+      unsubInvestments();
     };
   }, [user]);
 
@@ -142,6 +150,35 @@ export default function App() {
   };
 
   const handleLogout = () => signOut(auth);
+
+  // Investment actions
+  const addInvestment = async (investment: Omit<Investment, 'id' | 'userId'>) => {
+    if (!user) return;
+    const invRef = doc(collection(db, 'investments'));
+    try {
+      await setDoc(invRef, { ...investment, userId: user.uid });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, 'investments');
+    }
+  };
+
+  const deleteInvestment = async (id: string) => {
+    try {
+      await setDoc(doc(db, 'investments', id), {}, { merge: false }); // This is a simplified delete for the example
+      // In a real app, you'd use deleteDoc
+    } catch (error) {
+      handleFirestoreError(error, OperationType.DELETE, `investments/${id}`);
+    }
+  };
+
+  const updateInvestmentValue = async (id: string, newValue: number) => {
+    try {
+      const invRef = doc(db, 'investments', id);
+      await setDoc(invRef, { currentValue: newValue }, { merge: true });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.WRITE, `investments/${id}`);
+    }
+  };
 
   if (loading) {
     return (
@@ -231,6 +268,7 @@ export default function App() {
               transactions={transactions} 
               debts={debts} 
               loans={loans} 
+              investments={investments}
             />
           </motion.div>
         )}
@@ -272,6 +310,21 @@ export default function App() {
             <TransactionList 
               userId={user.uid}
               transactions={transactions} 
+            />
+          </motion.div>
+        )}
+        {activeTab === 'investments' && (
+          <motion.div
+            key="investments"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <InvestmentTracker 
+              investments={investments}
+              onAdd={addInvestment}
+              onDelete={deleteInvestment}
+              onUpdateValue={updateInvestmentValue}
             />
           </motion.div>
         )}

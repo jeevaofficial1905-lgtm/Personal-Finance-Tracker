@@ -68,6 +68,21 @@
         "monthlyPayment": { "type": "number" }
       },
       "required": ["userId", "name", "principal", "interestRate", "termMonths"]
+    },
+    "Investment": {
+      "title": "Investment",
+      "description": "An investment asset (stock, crypto, etc.).",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "name": { "type": "string" },
+        "type": { "type": "string", "enum": ["stock", "crypto", "real-estate", "bond", "other"] },
+        "amountInvested": { "type": "number" },
+        "currentValue": { "type": "number" },
+        "purchaseDate": { "type": "string", "format": "date-time" },
+        "notes": { "type": "string" }
+      },
+      "required": ["userId", "name", "type", "amountInvested", "currentValue", "purchaseDate"]
     }
   },
   "firestore": {
@@ -90,6 +105,10 @@
     "/loans/{loanId}": {
       "schema": "Loan",
       "description": "User loans."
+    },
+    "/investments/{investmentId}": {
+      "schema": "Investment",
+      "description": "User investments."
     }
   }
 }

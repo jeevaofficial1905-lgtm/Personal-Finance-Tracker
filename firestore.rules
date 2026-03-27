@@ -54,6 +54,17 @@ service cloud.firestore {
     //   - startDate: string (optional, date-time)
     //   - monthlyPayment: number (optional)
     //
+    // Collection: investments
+    // Document ID: investmentId
+    // Fields:
+    //   - userId: string (required)
+    //   - name: string (required)
+    //   - type: string (required, ['stock', 'crypto', 'real-estate', 'bond', 'other'])
+    //   - amountInvested: number (required)
+    //   - currentValue: number (required)
+    //   - purchaseDate: string (required, date-time)
+    //   - notes: string (optional)
+    //
     // ===============================================================
 
     // ===============================================================
@@ -127,6 +138,15 @@ service cloud.firestore {
              data.termMonths is number && data.termMonths > 0;
     }
 
+    function isValidInvestment(data) {
+      return data.userId is string && data.userId.size() > 0 &&
+             data.name is string && data.name.size() > 0 &&
+             data.type in ['stock', 'crypto', 'real-estate', 'bond', 'other'] &&
+             data.amountInvested is number && data.amountInvested >= 0 &&
+             data.currentValue is number && data.currentValue >= 0 &&
+             isValidDateString(data.purchaseDate);
+    }
+
     // ===============================================================
     // Rules
     // ===============================================================
@@ -163,6 +183,13 @@ service cloud.firestore {
       allow read: if isDocOwner() || isAdmin();
       allow create: if isRequestOwner() && isValidLoan(request.resource.data);
       allow update: if isDocOwner() && isRequestOwner() && isValidLoan(request.resource.data);
+      allow delete: if isDocOwner() || isAdmin();
+    }
+
+    match /investments/{investmentId} {
+      allow read: if isDocOwner() || isAdmin();
+      allow create: if isRequestOwner() && isValidInvestment(request.resource.data);
+      allow update: if isDocOwner() && isRequestOwner() && isValidInvestment(request.resource.data);
       allow delete: if isDocOwner() || isAdmin();
     }
   }

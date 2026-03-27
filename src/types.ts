@@ -45,3 +45,14 @@ export interface Loan {
   startDate?: string;
   monthlyPayment?: number;
 }
+
+export interface Investment {
+  id?: string;
+  userId: string;
+  name: string;
+  type: 'stock' | 'crypto' | 'real-estate' | 'bond' | 'other';
+  amountInvested: number;
+  currentValue: number;
+  purchaseDate: string;
+  notes?: string;
+}

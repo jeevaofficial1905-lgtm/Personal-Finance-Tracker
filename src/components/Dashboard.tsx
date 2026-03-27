@@ -1,12 +1,13 @@
-import { Budget, Transaction, Debt, Loan } from '../types';
+import { Budget, Transaction, Debt, Loan, Investment } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { 
   TrendingUp, 
   TrendingDown, 
-  DollarSign, 
+  IndianRupee, 
   ArrowUpRight, 
   ArrowDownRight,
-  AlertCircle
+  AlertCircle,
+  Briefcase
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -27,9 +28,10 @@ interface DashboardProps {
   transactions: Transaction[];
   debts: Debt[];
   loans: Loan[];
+  investments: Investment[];
 }
 
-export function Dashboard({ budgets, transactions, debts, loans }: DashboardProps) {
+export function Dashboard({ budgets, transactions, debts, loans, investments }: DashboardProps) {
   const totalIncome = transactions
     .filter(t => t.type === 'income')
     .reduce((acc, t) => acc + t.amount, 0);
@@ -42,6 +44,12 @@ export function Dashboard({ budgets, transactions, debts, loans }: DashboardProp
 
   const totalDebt = debts.reduce((acc, d) => acc + d.remainingAmount, 0);
   const totalLoans = loans.reduce((acc, l) => acc + l.principal, 0);
+
+  const totalInvested = investments.reduce((acc, inv) => acc + inv.amountInvested, 0);
+  const totalInvestmentValue = investments.reduce((acc, inv) => acc + inv.currentValue, 0);
+  const investmentGain = totalInvestmentValue - totalInvested;
+
+  const netWorth = balance + totalInvestmentValue - totalDebt - totalLoans;
 
   // Chart data: Expenses by category
   const expensesByCategory = transactions
@@ -82,21 +90,27 @@ export function Dashboard({ budgets, transactions, debts, loans }: DashboardProp
       </header>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         <StatCard 
-          title="Total Balance" 
-          value={balance} 
-          icon={DollarSign}
-          trend={balance >= 0 ? 'up' : 'down'}
+          title="Net Worth" 
+          value={netWorth} 
+          icon={IndianRupee}
+          color="text-[var(--color-accent)]"
         />
         <StatCard 
-          title="Monthly Income" 
+          title="Investments" 
+          value={totalInvestmentValue} 
+          icon={Briefcase}
+          trend={investmentGain >= 0 ? 'up' : 'down'}
+        />
+        <StatCard 
+          title="Income" 
           value={totalIncome} 
           icon={TrendingUp}
           color="text-emerald-600"
         />
         <StatCard 
-          title="Monthly Expenses" 
+          title="Expenses" 
           value={totalExpenses} 
           icon={TrendingDown}
           color="text-rose-600"

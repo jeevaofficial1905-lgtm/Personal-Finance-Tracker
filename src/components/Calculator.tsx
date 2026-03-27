@@ -87,6 +87,22 @@ export function Calculator({ onClose }: CalculatorProps) {
     setDisplay(prev => String(parseFloat(prev) / 100));
   }, []);
 
+  const convertToINR = useCallback(() => {
+    setDisplay(prev => {
+      const usd = parseFloat(prev);
+      const inr = usd * 83.0; // Fixed conversion rate
+      return String(Math.round(inr));
+    });
+  }, []);
+
+  const convertToUSD = useCallback(() => {
+    setDisplay(prev => {
+      const inr = parseFloat(prev);
+      const usd = inr / 83.0; // Fixed conversion rate
+      return String(usd.toFixed(2));
+    });
+  }, []);
+
   const handleBackspace = useCallback(() => {
     setDisplay(prev => {
       if (prev.length > 1) {
@@ -159,6 +175,10 @@ export function Calculator({ onClose }: CalculatorProps) {
         </div>
 
         <div className="grid grid-cols-4 gap-2">
+          {/* Conversion Row */}
+          <CalcButton label="USD → INR" onClick={convertToINR} variant="secondary" className="col-span-2 text-[10px]" />
+          <CalcButton label="INR → USD" onClick={convertToUSD} variant="secondary" className="col-span-2 text-[10px]" />
+
           {/* Row 1 */}
           <CalcButton label="AC" onClick={clearAll} variant="secondary" />
           <CalcButton label="+/-" onClick={toggleSign} variant="secondary" />

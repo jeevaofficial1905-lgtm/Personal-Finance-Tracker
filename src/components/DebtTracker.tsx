@@ -243,17 +243,34 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
                   />
                 </div>
 
-                <div className="flex justify-between items-center">
+                <div className="flex justify-between items-center pt-4 border-t border-[var(--color-border)]/50">
                   <div className="flex items-center gap-2 text-sm text-[var(--color-muted)]/60">
                     <Calendar className="w-4 h-4" />
                     {debt.dueDate ? `Due ${formatDate(debt.dueDate)}` : 'No due date'}
                   </div>
-                  <button
-                    onClick={() => debt.id && handleUpdateDebt(debt.id, 50)}
-                    className="text-xs font-bold uppercase tracking-wider text-[var(--color-muted)] hover:text-[var(--color-accent)] transition-colors"
-                  >
-                    Pay $50
-                  </button>
+                  <div className="flex gap-2">
+                    {debt.remainingAmount > 0 ? (
+                      <>
+                        <button
+                          onClick={() => debt.id && handleUpdateDebt(debt.id, 50)}
+                          className="px-3 py-1.5 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent)] transition-all"
+                        >
+                          Pay {formatCurrency(50)}
+                        </button>
+                        <button
+                          onClick={() => debt.id && handleUpdateDebt(debt.id, debt.remainingAmount)}
+                          className="px-3 py-1.5 bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--color-accent)] hover:text-white transition-all"
+                        >
+                          Pay Full
+                        </button>
+                      </>
+                    ) : (
+                      <span className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold uppercase tracking-wider">
+                        <CheckCircle2 className="w-3 h-3" />
+                        Paid
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>

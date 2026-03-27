@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Budget, Transaction, Debt, Loan, Investment, Creditor, Debtor } from '../types';
 import { formatCurrency, cn } from '../lib/utils';
 import { 
@@ -8,7 +9,8 @@ import {
   ArrowDownRight,
   AlertCircle,
   Briefcase,
-  Users
+  Users,
+  Calendar
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -35,15 +37,32 @@ interface DashboardProps {
 }
 
 export function Dashboard({ budgets, transactions, debts, loans, investments, creditors, debtors }: DashboardProps) {
-  const totalIncome = transactions
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
+
+  const filteredTransactions = transactions.filter(t => {
+    const tDate = new Date(t.date);
+    return tDate.getMonth() === selectedMonth && tDate.getFullYear() === selectedYear;
+  });
+
+  const totalIncome = filteredTransactions
     .filter(t => t.type === 'income')
     .reduce((acc, t) => acc + t.amount, 0);
   
-  const totalExpenses = transactions
+  const totalExpenses = filteredTransactions
     .filter(t => t.type === 'expense')
     .reduce((acc, t) => acc + t.amount, 0);
 
-  const balance = totalIncome - totalExpenses;
+  const balance = transactions
+    .reduce((acc, t) => acc + (t.type === 'income' ? t.amount : -t.amount), 0);
 
   const totalDebt = debts.reduce((acc, d) => acc + d.remainingAmount, 0);
   const totalLoans = loans.reduce((acc, l) => acc + l.principal, 0);
@@ -60,8 +79,8 @@ export function Dashboard({ budgets, transactions, debts, loans, investments, cr
 
   const netWorth = balance + totalInvestmentValue + totalDebtors - totalDebt - totalLoans - totalCreditors;
 
-  // Chart data: Expenses by category
-  const expensesByCategory = transactions
+  // Chart data: Expenses by category (filtered by month)
+  const expensesByCategory = filteredTransactions
     .filter(t => t.type === 'expense')
     .reduce((acc: any, t) => {
       acc[t.category] = (acc[t.category] || 0) + t.amount;
@@ -75,9 +94,9 @@ export function Dashboard({ budgets, transactions, debts, loans, investments, cr
 
   const COLORS = ['#5A5A40', '#A0522D', '#708090', '#8FBC8F', '#BDB76B'];
 
-  // Budget status
+  // Budget status (filtered by month)
   const budgetStatus = budgets.map(b => {
-    const spent = transactions
+    const spent = filteredTransactions
       .filter(t => t.type === 'expense' && t.category === b.category)
       .reduce((acc, t) => acc + t.amount, 0);
     return {
@@ -93,9 +112,34 @@ export function Dashboard({ budgets, transactions, debts, loans, investments, cr
       animate={{ opacity: 1, y: 0 }}
       className="space-y-8"
     >
-      <header>
-        <h1 className="text-4xl font-bold tracking-tight font-serif">Overview</h1>
-        <p className="text-[var(--color-muted)]">Your financial health at a glance.</p>
+      <header className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-4xl font-bold tracking-tight font-serif">Overview</h1>
+          <p className="text-[var(--color-muted)]">Your financial health at a glance.</p>
+        </div>
+        <div className="flex bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-1 shadow-sm">
+          <div className="flex items-center px-3 text-[var(--color-muted)]">
+            <Calendar className="w-4 h-4" />
+          </div>
+          <select 
+            value={selectedMonth} 
+            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+            className="bg-transparent px-3 py-1.5 text-sm font-medium focus:outline-none"
+          >
+            {months.map((m, i) => (
+              <option key={m} value={i}>{m}</option>
+            ))}
+          </select>
+          <select 
+            value={selectedYear} 
+            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+            className="bg-transparent px-3 py-1.5 text-sm font-medium focus:outline-none border-l border-[var(--color-border)]"
+          >
+            {years.map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
       </header>
 
       {/* Stats Grid */}
@@ -113,13 +157,13 @@ export function Dashboard({ budgets, transactions, debts, loans, investments, cr
           trend={investmentGain >= 0 ? 'up' : 'down'}
         />
         <StatCard 
-          title="Income" 
+          title={`${months[selectedMonth]} Income`} 
           value={totalIncome} 
           icon={TrendingUp}
           color="text-emerald-600"
         />
         <StatCard 
-          title="Expenses" 
+          title={`${months[selectedMonth]} Expenses`} 
           value={totalExpenses} 
           icon={TrendingDown}
           color="text-rose-600"

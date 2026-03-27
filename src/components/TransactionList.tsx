@@ -15,6 +15,17 @@ export function TransactionList({ userId, transactions }: TransactionListProps) 
   const [isAdding, setIsAdding] = useState(false);
   const [filter, setFilter] = useState<'all' | 'income' | 'expense'>('all');
   const [searchTerm, setSearchTerm] = useState('');
+  
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+
+  const months = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December"
+  ];
+
+  const years = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
 
   const [form, setForm] = useState({
     amount: 0,
@@ -56,12 +67,23 @@ export function TransactionList({ userId, transactions }: TransactionListProps) 
 
   const filteredTransactions = transactions
     .filter(t => {
+      const tDate = new Date(t.date);
+      const matchesMonth = tDate.getMonth() === selectedMonth;
+      const matchesYear = tDate.getFullYear() === selectedYear;
       const matchesFilter = filter === 'all' || t.type === filter;
       const matchesSearch = t.description?.toLowerCase().includes(searchTerm.toLowerCase()) || 
                            t.category.toLowerCase().includes(searchTerm.toLowerCase());
-      return matchesFilter && matchesSearch;
+      return matchesMonth && matchesYear && matchesFilter && matchesSearch;
     })
     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+  const monthlyTotalIncome = filteredTransactions
+    .filter(t => t.type === 'income')
+    .reduce((acc, t) => acc + t.amount, 0);
+
+  const monthlyTotalExpense = filteredTransactions
+    .filter(t => t.type === 'expense')
+    .reduce((acc, t) => acc + t.amount, 0);
 
   return (
     <motion.div 
@@ -74,14 +96,48 @@ export function TransactionList({ userId, transactions }: TransactionListProps) 
           <h1 className="text-4xl font-bold tracking-tight font-serif">Transactions</h1>
           <p className="text-[var(--color-muted)]">History of your income and expenses.</p>
         </div>
-        <button
-          onClick={() => setIsAdding(true)}
-          className="bg-[var(--color-accent)] text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-all flex items-center gap-2 shadow-sm"
-        >
-          <Plus className="w-5 h-5" />
-          Add Transaction
-        </button>
+        <div className="flex items-center gap-3">
+          <div className="flex bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-1 shadow-sm">
+            <select 
+              value={selectedMonth} 
+              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+              className="bg-transparent px-3 py-1.5 text-sm font-medium focus:outline-none"
+            >
+              {months.map((m, i) => (
+                <option key={m} value={i}>{m}</option>
+              ))}
+            </select>
+            <select 
+              value={selectedYear} 
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="bg-transparent px-3 py-1.5 text-sm font-medium focus:outline-none border-l border-[var(--color-border)]"
+            >
+              {years.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
+          </div>
+          <button
+            onClick={() => setIsAdding(true)}
+            className="bg-[var(--color-accent)] text-white px-6 py-3 rounded-xl font-semibold hover:opacity-90 transition-all flex items-center gap-2 shadow-sm"
+          >
+            <Plus className="w-5 h-5" />
+            Add
+          </button>
+        </div>
       </header>
+
+      {/* Monthly Summary Mini Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm">
+          <p className="text-xs text-[var(--color-muted)] uppercase tracking-wider font-semibold">Monthly Income</p>
+          <p className="text-xl font-bold text-emerald-600">{formatCurrency(monthlyTotalIncome)}</p>
+        </div>
+        <div className="bg-[var(--color-card)] border border-[var(--color-border)] rounded-2xl p-4 shadow-sm">
+          <p className="text-xs text-[var(--color-muted)] uppercase tracking-wider font-semibold">Monthly Expense</p>
+          <p className="text-xl font-bold text-rose-600">{formatCurrency(monthlyTotalExpense)}</p>
+        </div>
+      </div>
 
       {isAdding && (
         <motion.div 

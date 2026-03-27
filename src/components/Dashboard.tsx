@@ -10,7 +10,8 @@ import {
   AlertCircle,
   Briefcase,
   Users,
-  Calendar
+  Calendar,
+  Download
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -25,6 +26,8 @@ import {
   Pie
 } from 'recharts';
 import { motion } from 'motion/react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface DashboardProps {
   budgets: Budget[];
@@ -65,7 +68,7 @@ export function Dashboard({ budgets, transactions, debts, loans, investments, cr
     .reduce((acc, t) => acc + (t.type === 'income' ? t.amount : -t.amount), 0);
 
   const totalDebt = debts.reduce((acc, d) => acc + d.remainingAmount, 0);
-  const totalLoans = loans.reduce((acc, l) => acc + l.principal, 0);
+  const totalLoans = loans.reduce((acc, l) => acc + (l.remainingAmount ?? l.principal), 0);
   const totalCreditors = creditors
     .filter(c => c.status === 'pending')
     .reduce((acc, c) => acc + c.amount, 0);
@@ -106,6 +109,79 @@ export function Dashboard({ budgets, transactions, debts, loans, investments, cr
     };
   });
 
+  const exportMonthlyPDF = () => {
+    const doc = new jsPDF();
+    const monthName = months[selectedMonth];
+    const yearName = selectedYear;
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(90, 90, 64); // --color-accent
+    doc.text(`Financial Report: ${monthName} ${yearName}`, 14, 22);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
+
+    // Summary Table
+    autoTable(doc, {
+      startY: 40,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Net Worth', formatCurrency(netWorth)],
+        ['Total Income', formatCurrency(totalIncome)],
+        ['Total Expenses', formatCurrency(totalExpenses)],
+        ['Total Investments', formatCurrency(totalInvestmentValue)],
+        ['Total Liabilities', formatCurrency(totalDebt + totalLoans + totalCreditors)],
+        ['Total Receivables', formatCurrency(totalDebtors)],
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [90, 90, 64] },
+    });
+
+    // Budget Table
+    if (budgetStatus.length > 0) {
+      doc.setFontSize(16);
+      doc.setTextColor(0);
+      doc.text('Budget Performance', 14, (doc as any).lastAutoTable.finalY + 15);
+
+      autoTable(doc, {
+        startY: (doc as any).lastAutoTable.finalY + 20,
+        head: [['Category', 'Limit', 'Spent', 'Status']],
+        body: budgetStatus.map(b => [
+          b.category,
+          formatCurrency(b.limit),
+          formatCurrency(b.spent),
+          `${b.percent.toFixed(1)}%`
+        ]),
+        headStyles: { fillColor: [90, 90, 64] },
+      });
+    }
+
+    // Transactions Table
+    doc.setFontSize(16);
+    doc.setTextColor(0);
+    doc.text('Transaction Details', 14, (doc as any).lastAutoTable.finalY + 15);
+
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 20,
+      head: [['Date', 'Description', 'Category', 'Type', 'Amount']],
+      body: filteredTransactions.map(t => [
+        new Date(t.date).toLocaleDateString(),
+        t.description,
+        t.category,
+        t.type.toUpperCase(),
+        formatCurrency(t.amount)
+      ]),
+      headStyles: { fillColor: [90, 90, 64] },
+      columnStyles: {
+        4: { halign: 'right' }
+      }
+    });
+
+    doc.save(`WealthTrack_Report_${monthName}_${yearName}.pdf`);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -117,28 +193,37 @@ export function Dashboard({ budgets, transactions, debts, loans, investments, cr
           <h1 className="text-4xl font-bold tracking-tight font-serif">Overview</h1>
           <p className="text-[var(--color-muted)]">Your financial health at a glance.</p>
         </div>
-        <div className="flex bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-1 shadow-sm">
-          <div className="flex items-center px-3 text-[var(--color-muted)]">
-            <Calendar className="w-4 h-4" />
+        <div className="flex items-center gap-4">
+          <button
+            onClick={exportMonthlyPDF}
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl text-sm font-medium hover:bg-[var(--color-background)] transition-colors shadow-sm"
+          >
+            <Download className="w-4 h-4" />
+            Download Report
+          </button>
+          <div className="flex bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-1 shadow-sm">
+            <div className="flex items-center px-3 text-[var(--color-muted)]">
+              <Calendar className="w-4 h-4" />
+            </div>
+            <select 
+              value={selectedMonth} 
+              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+              className="bg-transparent px-3 py-1.5 text-sm font-medium focus:outline-none"
+            >
+              {months.map((m, i) => (
+                <option key={m} value={i}>{m}</option>
+              ))}
+            </select>
+            <select 
+              value={selectedYear} 
+              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+              className="bg-transparent px-3 py-1.5 text-sm font-medium focus:outline-none border-l border-[var(--color-border)]"
+            >
+              {years.map(y => (
+                <option key={y} value={y}>{y}</option>
+              ))}
+            </select>
           </div>
-          <select 
-            value={selectedMonth} 
-            onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-            className="bg-transparent px-3 py-1.5 text-sm font-medium focus:outline-none"
-          >
-            {months.map((m, i) => (
-              <option key={m} value={i}>{m}</option>
-            ))}
-          </select>
-          <select 
-            value={selectedYear} 
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-            className="bg-transparent px-3 py-1.5 text-sm font-medium focus:outline-none border-l border-[var(--color-border)]"
-          >
-            {years.map(y => (
-              <option key={y} value={y}>{y}</option>
-            ))}
-          </select>
         </div>
       </header>
 

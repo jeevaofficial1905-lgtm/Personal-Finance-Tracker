@@ -9,7 +9,8 @@ import {
   ArrowUpRight, 
   ArrowDownRight,
   Target,
-  Percent
+  Percent,
+  Download
 } from 'lucide-react';
 import { 
   BarChart, 
@@ -25,6 +26,8 @@ import {
   Pie
 } from 'recharts';
 import { motion } from 'motion/react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface IncomeExpenseManagerProps {
   transactions: Transaction[];
@@ -107,6 +110,100 @@ export function IncomeExpenseManager({ transactions }: IncomeExpenseManagerProps
 
   const COLORS = ['#5A5A40', '#A0522D', '#708090', '#8FBC8F', '#BDB76B', '#CD853F', '#6B8E23'];
 
+  const exportMonthlyPDF = (monthName: string) => {
+    const doc = new jsPDF();
+    const [month, year] = monthName.split(' ');
+    
+    // Header
+    doc.setFontSize(22);
+    doc.setTextColor(90, 90, 64); // --color-accent
+    doc.text(`Financial Report: ${monthName}`, 14, 22);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
+
+    // Filter transactions for this month
+    const monthTransactions = transactions.filter(t => {
+      const d = new Date(t.date);
+      const m = d.toLocaleString('default', { month: 'short' });
+      const y = d.getFullYear().toString();
+      return m === month && y === year;
+    });
+
+    const income = monthTransactions.filter(t => t.type === 'income');
+    const expenses = monthTransactions.filter(t => t.type === 'expense');
+    
+    const totalIncome = income.reduce((acc, t) => acc + t.amount, 0);
+    const totalExpense = expenses.reduce((acc, t) => acc + t.amount, 0);
+    const savings = totalIncome - totalExpense;
+    const savingsRate = totalIncome > 0 ? (savings / totalIncome) * 100 : 0;
+
+    // Summary Table
+    autoTable(doc, {
+      startY: 40,
+      head: [['Metric', 'Value']],
+      body: [
+        ['Total Income', formatCurrency(totalIncome)],
+        ['Total Expenses', formatCurrency(totalExpense)],
+        ['Net Savings', formatCurrency(savings)],
+        ['Savings Rate', `${savingsRate.toFixed(1)}%`],
+      ],
+      theme: 'striped',
+      headStyles: { fillColor: [90, 90, 64] },
+    });
+
+    // Transactions Table
+    doc.setFontSize(16);
+    doc.setTextColor(0);
+    doc.text('Transaction Details', 14, (doc as any).lastAutoTable.finalY + 15);
+
+    autoTable(doc, {
+      startY: (doc as any).lastAutoTable.finalY + 20,
+      head: [['Date', 'Description', 'Category', 'Type', 'Amount']],
+      body: monthTransactions.map(t => [
+        new Date(t.date).toLocaleDateString(),
+        t.description,
+        t.category,
+        t.type.toUpperCase(),
+        formatCurrency(t.amount)
+      ]),
+      headStyles: { fillColor: [90, 90, 64] },
+      columnStyles: {
+        4: { halign: 'right' }
+      }
+    });
+
+    doc.save(`WealthTrack_Report_${month}_${year}.pdf`);
+  };
+
+  const exportFullReport = () => {
+    const doc = new jsPDF();
+    
+    doc.setFontSize(22);
+    doc.setTextColor(90, 90, 64);
+    doc.text(`Financial Summary: Last ${timeRange} Months`, 14, 22);
+    
+    doc.setFontSize(12);
+    doc.setTextColor(100);
+    doc.text(`Generated on ${new Date().toLocaleDateString()}`, 14, 30);
+
+    autoTable(doc, {
+      startY: 40,
+      head: [['Month', 'Income', 'Expense', 'Savings', 'Rate']],
+      body: chartData.slice().reverse().map(row => [
+        row.name,
+        formatCurrency(row.income),
+        formatCurrency(row.expense),
+        formatCurrency(row.savings),
+        `${row.income > 0 ? ((row.savings / row.income) * 100).toFixed(1) : 0}%`
+      ]),
+      headStyles: { fillColor: [90, 90, 64] },
+    });
+
+    doc.save(`WealthTrack_Full_Report_${timeRange}_Months.pdf`);
+  };
+
   return (
     <motion.div 
       initial={{ opacity: 0, y: 20 }}
@@ -118,25 +215,34 @@ export function IncomeExpenseManager({ transactions }: IncomeExpenseManagerProps
           <h1 className="text-4xl font-bold tracking-tight font-serif">Income vs Expense</h1>
           <p className="text-[var(--color-muted)]">Analyze your cash flow trends and savings performance.</p>
         </div>
-        <div className="flex bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-1 shadow-sm">
+        <div className="flex items-center gap-4">
           <button
-            onClick={() => setTimeRange(6)}
-            className={cn(
-              "px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
-              timeRange === 6 ? "bg-[var(--color-accent)] text-white" : "text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
-            )}
+            onClick={exportFullReport}
+            className="flex items-center gap-2 px-4 py-2 bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl text-sm font-medium hover:bg-[var(--color-background)] transition-colors shadow-sm"
           >
-            Last 6 Months
+            <Download className="w-4 h-4" />
+            Export Full Report
           </button>
-          <button
-            onClick={() => setTimeRange(12)}
-            className={cn(
-              "px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
-              timeRange === 12 ? "bg-[var(--color-accent)] text-white" : "text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
-            )}
-          >
-            Last 12 Months
-          </button>
+          <div className="flex bg-[var(--color-card)] border border-[var(--color-border)] rounded-xl p-1 shadow-sm">
+            <button
+              onClick={() => setTimeRange(6)}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
+                timeRange === 6 ? "bg-[var(--color-accent)] text-white" : "text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
+              )}
+            >
+              Last 6 Months
+            </button>
+            <button
+              onClick={() => setTimeRange(12)}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-sm font-medium transition-all",
+                timeRange === 12 ? "bg-[var(--color-accent)] text-white" : "text-[var(--color-muted)] hover:text-[var(--color-foreground)]"
+              )}
+            >
+              Last 12 Months
+            </button>
+          </div>
         </div>
       </header>
 
@@ -304,6 +410,7 @@ export function IncomeExpenseManager({ transactions }: IncomeExpenseManagerProps
                 <th className="px-8 py-4">Expense</th>
                 <th className="px-8 py-4">Savings</th>
                 <th className="px-8 py-4">Rate</th>
+                <th className="px-8 py-4 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-[var(--color-border)]">
@@ -320,6 +427,15 @@ export function IncomeExpenseManager({ transactions }: IncomeExpenseManagerProps
                   </td>
                   <td className="px-8 py-4 text-[var(--color-muted)] font-medium">
                     {row.income > 0 ? ((row.savings / row.income) * 100).toFixed(1) : 0}%
+                  </td>
+                  <td className="px-8 py-4 text-right">
+                    <button
+                      onClick={() => exportMonthlyPDF(row.name)}
+                      className="p-2 hover:bg-[var(--color-background)] rounded-lg transition-colors text-[var(--color-accent)]"
+                      title="Download Monthly PDF"
+                    >
+                      <Download className="w-4 h-4" />
+                    </button>
                   </td>
                 </tr>
               ))}

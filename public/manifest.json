@@ -1,0 +1,20 @@
+{
+  "short_name": "WealthTrack",
+  "name": "WealthTrack Finance Manager",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/wealthtrack/192/192",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://picsum.photos/seed/wealthtrack/512/512",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F5F5F0",
+  "display": "standalone",
+  "theme_color": "#5A5A40"
+}

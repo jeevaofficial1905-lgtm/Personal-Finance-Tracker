@@ -10,7 +10,7 @@ import {
   setPersistence,
   browserLocalPersistence
 } from 'firebase/auth';
-import { collection, query, where, onSnapshot, doc, setDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
 import { UserProfile, Budget, Transaction, Debt, Loan, Investment } from './types';
 import { Layout } from './components/Layout';
@@ -164,8 +164,7 @@ export default function App() {
 
   const deleteInvestment = async (id: string) => {
     try {
-      await setDoc(doc(db, 'investments', id), {}, { merge: false }); // This is a simplified delete for the example
-      // In a real app, you'd use deleteDoc
+      await deleteDoc(doc(db, 'investments', id));
     } catch (error) {
       handleFirestoreError(error, OperationType.DELETE, `investments/${id}`);
     }

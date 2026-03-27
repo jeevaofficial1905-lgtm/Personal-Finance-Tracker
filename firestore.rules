@@ -49,6 +49,7 @@ service cloud.firestore {
     //   - userId: string (required)
     //   - name: string (required)
     //   - principal: number (required)
+    //   - remainingAmount: number (required)
     //   - interestRate: number (required)
     //   - termMonths: number (required)
     //   - startDate: string (optional, date-time)
@@ -157,6 +158,7 @@ service cloud.firestore {
       return data.userId is string && data.userId.size() > 0 &&
              data.name is string && data.name.size() > 0 &&
              data.principal is number && data.principal >= 0 &&
+             data.remainingAmount is number && data.remainingAmount >= 0 &&
              data.interestRate is number && data.interestRate >= 0 &&
              data.termMonths is number && data.termMonths > 0;
     }

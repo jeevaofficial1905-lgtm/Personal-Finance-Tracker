@@ -41,6 +41,7 @@ export interface Loan {
   userId: string;
   name: string;
   principal: number;
+  remainingAmount: number;
   interestRate: number;
   termMonths: number;
   startDate?: string;

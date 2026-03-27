@@ -19,7 +19,7 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
 
   // Form states
   const [debtForm, setDebtForm] = useState({ name: '', totalAmount: 0, remainingAmount: 0, dueDate: '', monthlyPayment: 0 });
-  const [loanForm, setLoanForm] = useState({ name: '', principal: 0, interestRate: 0, termMonths: 12 });
+  const [loanForm, setLoanForm] = useState({ name: '', principal: 0, remainingAmount: 0, interestRate: 0, termMonths: 12, monthlyPayment: 0 });
 
   const handleAddDebt = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,14 +46,27 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
         userId,
         ...loanForm,
         principal: Number(loanForm.principal),
+        remainingAmount: Number(loanForm.remainingAmount || loanForm.principal),
         interestRate: Number(loanForm.interestRate),
         termMonths: Number(loanForm.termMonths),
+        monthlyPayment: Number(loanForm.monthlyPayment),
         startDate: new Date().toISOString()
       });
       setIsAdding(false);
-      setLoanForm({ name: '', principal: 0, interestRate: 0, termMonths: 12 });
+      setLoanForm({ name: '', principal: 0, remainingAmount: 0, interestRate: 0, termMonths: 12, monthlyPayment: 0 });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'loans');
+    }
+  };
+
+  const handleUpdateLoan = async (id: string, paidAmount: number) => {
+    const loan = loans.find(l => l.id === id);
+    if (!loan) return;
+    const newRemaining = Math.max(0, loan.remainingAmount - paidAmount);
+    try {
+      await updateDoc(doc(db, 'loans', id), { remainingAmount: newRemaining });
+    } catch (error) {
+      handleFirestoreError(error, OperationType.UPDATE, `loans/${id}`);
     }
   };
 
@@ -189,7 +202,17 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
                   type="number"
                   required
                   value={loanForm.principal}
-                  onChange={e => setLoanForm({ ...loanForm, principal: Number(e.target.value) })}
+                  onChange={e => setLoanForm({ ...loanForm, principal: Number(e.target.value), remainingAmount: Number(e.target.value) })}
+                  className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--color-accent)]"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[var(--color-muted)]">Remaining Balance</label>
+                <input
+                  type="number"
+                  required
+                  value={loanForm.remainingAmount}
+                  onChange={e => setLoanForm({ ...loanForm, remainingAmount: Number(e.target.value) })}
                   className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--color-accent)]"
                 />
               </div>
@@ -201,6 +224,25 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
                   required
                   value={loanForm.interestRate}
                   onChange={e => setLoanForm({ ...loanForm, interestRate: Number(e.target.value) })}
+                  className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--color-accent)]"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[var(--color-muted)]">Tenure (Months)</label>
+                <input
+                  type="number"
+                  required
+                  value={loanForm.termMonths}
+                  onChange={e => setLoanForm({ ...loanForm, termMonths: Number(e.target.value) })}
+                  className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--color-accent)]"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[var(--color-muted)]">Monthly Payment</label>
+                <input
+                  type="number"
+                  value={loanForm.monthlyPayment}
+                  onChange={e => setLoanForm({ ...loanForm, monthlyPayment: Number(e.target.value) })}
                   className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--color-accent)]"
                 />
               </div>
@@ -333,6 +375,10 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
 
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-1">
+                  <p className="text-xs text-[var(--color-muted)]/60 uppercase font-bold tracking-widest">Remaining</p>
+                  <p className="text-2xl font-bold text-rose-600">{formatCurrency(loan.remainingAmount)}</p>
+                </div>
+                <div className="space-y-1">
                   <p className="text-xs text-[var(--color-muted)]/60 uppercase font-bold tracking-widest">Principal</p>
                   <p className="text-xl font-bold">{formatCurrency(loan.principal)}</p>
                 </div>
@@ -347,9 +393,63 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
                   <p className="text-xs text-[var(--color-muted)]/60 uppercase font-bold tracking-widest">Term</p>
                   <p className="text-xl font-bold">{loan.termMonths} Months</p>
                 </div>
-                <div className="space-y-1">
-                  <p className="text-xs text-[var(--color-muted)]/60 uppercase font-bold tracking-widest">Started</p>
-                  <p className="text-xl font-bold">{loan.startDate ? formatDate(loan.startDate) : 'N/A'}</p>
+                {loan.monthlyPayment && loan.monthlyPayment > 0 && (
+                  <div className="col-span-2 bg-[var(--color-background)] rounded-2xl p-4 border border-[var(--color-border)] flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+                      <Calendar className="w-4 h-4" />
+                      Monthly Repayment
+                    </div>
+                    <p className="font-bold text-[var(--color-accent)]">{formatCurrency(loan.monthlyPayment)}</p>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-4">
+                <div className="h-2 bg-[var(--color-border)]/50 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${(1 - loan.remainingAmount / loan.principal) * 100}%` }}
+                    className="h-full bg-emerald-600 rounded-full"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-4 border-t border-[var(--color-border)]/50">
+                  {loan.remainingAmount > 0 ? (
+                    <>
+                      <div className="relative flex-1">
+                        <input
+                          type="number"
+                          placeholder="Amount"
+                          value={paymentInputs[loan.id!] || ''}
+                          onChange={(e) => setPaymentInputs({ ...paymentInputs, [loan.id!]: e.target.value })}
+                          className="w-full px-2 py-1.5 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg text-[10px] focus:outline-none focus:border-[var(--color-accent)]"
+                        />
+                      </div>
+                      <button
+                        onClick={() => {
+                          const amount = Number(paymentInputs[loan.id!] || 0);
+                          if (amount > 0 && loan.id) {
+                            handleUpdateLoan(loan.id, amount);
+                            setPaymentInputs({ ...paymentInputs, [loan.id!]: '' });
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-[var(--color-accent)] text-white rounded-lg text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-all"
+                      >
+                        Pay
+                      </button>
+                      <button
+                        onClick={() => loan.id && handleUpdateLoan(loan.id, loan.remainingAmount)}
+                        className="px-3 py-1.5 bg-[var(--color-accent)]/10 text-[var(--color-accent)] rounded-lg text-[10px] font-bold uppercase tracking-wider hover:bg-[var(--color-accent)] hover:text-white transition-all"
+                      >
+                        Full
+                      </button>
+                    </>
+                  ) : (
+                    <span className="flex items-center gap-1 text-emerald-600 text-[10px] font-bold uppercase tracking-wider">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Loan Cleared
+                    </span>
+                  )}
                 </div>
               </div>
             </div>

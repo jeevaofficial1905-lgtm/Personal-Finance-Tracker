@@ -63,12 +63,13 @@
         "userId": { "type": "string" },
         "name": { "type": "string" },
         "principal": { "type": "number" },
+        "remainingAmount": { "type": "number" },
         "interestRate": { "type": "number" },
         "termMonths": { "type": "integer" },
         "startDate": { "type": "string", "format": "date-time" },
         "monthlyPayment": { "type": "number" }
       },
-      "required": ["userId", "name", "principal", "interestRate", "termMonths"]
+      "required": ["userId", "name", "principal", "remainingAmount", "interestRate", "termMonths"]
     },
     "Investment": {
       "title": "Investment",

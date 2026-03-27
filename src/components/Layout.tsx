@@ -8,10 +8,12 @@ import {
   LogOut, 
   Wallet,
   Menu,
-  X
+  X,
+  Calculator as CalculatorIcon
 } from 'lucide-react';
 import { cn } from '../lib/utils';
-import { motion } from 'motion/react';
+import { motion, AnimatePresence } from 'motion/react';
+import { Calculator } from './Calculator';
 
 interface LayoutProps {
   user: User;
@@ -23,6 +25,7 @@ interface LayoutProps {
 
 export function Layout({ user, activeTab, setActiveTab, onLogout, children }: LayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
+  const [isCalculatorOpen, setIsCalculatorOpen] = React.useState(false);
 
   const navItems = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -129,11 +132,35 @@ export function Layout({ user, activeTab, setActiveTab, onLogout, children }: La
       )}
 
       {/* Main Content */}
-      <main className="flex-1 overflow-y-auto p-4 md:p-10">
+      <main className="flex-1 overflow-y-auto p-4 md:p-10 relative">
         <div className="max-w-6xl mx-auto">
           {children}
+        </div>
+
+        {/* Floating Calculator Button */}
+        <div className="fixed bottom-6 right-6 z-50">
+          <AnimatePresence>
+            {isCalculatorOpen && (
+              <Calculator onClose={() => setIsCalculatorOpen(false)} />
+            )}
+          </AnimatePresence>
+          
+          <motion.button
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            onClick={() => setIsCalculatorOpen(!isCalculatorOpen)}
+            className={cn(
+              "w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl transition-all duration-300",
+              isCalculatorOpen 
+                ? "bg-[var(--color-foreground)] text-[var(--color-background)] rotate-90" 
+                : "bg-[var(--color-accent)] text-white"
+            )}
+          >
+            {isCalculatorOpen ? <X className="w-6 h-6" /> : <CalculatorIcon className="w-6 h-6" />}
+          </motion.button>
         </div>
       </main>
     </div>
   );
 }
+

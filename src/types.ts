@@ -33,6 +33,7 @@ export interface Debt {
   remainingAmount: number;
   dueDate?: string;
   interestRate?: number;
+  monthlyPayment?: number;
 }
 
 export interface Loan {

@@ -12,7 +12,7 @@ import {
 } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, setDoc, getDoc, deleteDoc } from 'firebase/firestore';
 import { auth, db, handleFirestoreError, OperationType } from './lib/firebase';
-import { UserProfile, Budget, Transaction, Debt, Loan, Investment } from './types';
+import { UserProfile, Budget, Transaction, Debt, Loan, Investment, Creditor, Debtor } from './types';
 import { Layout } from './components/Layout';
 import { Dashboard } from './components/Dashboard';
 import { BudgetTracker } from './components/BudgetTracker';

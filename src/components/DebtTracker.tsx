@@ -17,7 +17,7 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
   const [isAdding, setIsAdding] = useState(false);
 
   // Form states
-  const [debtForm, setDebtForm] = useState({ name: '', totalAmount: 0, remainingAmount: 0, dueDate: '' });
+  const [debtForm, setDebtForm] = useState({ name: '', totalAmount: 0, remainingAmount: 0, dueDate: '', monthlyPayment: 0 });
   const [loanForm, setLoanForm] = useState({ name: '', principal: 0, interestRate: 0, termMonths: 12 });
 
   const handleAddDebt = async (e: React.FormEvent) => {
@@ -28,10 +28,11 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
         ...debtForm,
         totalAmount: Number(debtForm.totalAmount),
         remainingAmount: Number(debtForm.remainingAmount),
+        monthlyPayment: Number(debtForm.monthlyPayment),
         dueDate: debtForm.dueDate ? new Date(debtForm.dueDate).toISOString() : null
       });
       setIsAdding(false);
-      setDebtForm({ name: '', totalAmount: 0, remainingAmount: 0, dueDate: '' });
+      setDebtForm({ name: '', totalAmount: 0, remainingAmount: 0, dueDate: '', monthlyPayment: 0 });
     } catch (error) {
       handleFirestoreError(error, OperationType.CREATE, 'debts');
     }
@@ -155,6 +156,15 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
                   className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--color-accent)]"
                 />
               </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-[var(--color-muted)]">Monthly Payment</label>
+                <input
+                  type="number"
+                  value={debtForm.monthlyPayment}
+                  onChange={e => setDebtForm({ ...debtForm, monthlyPayment: Number(e.target.value) })}
+                  className="w-full bg-[var(--color-background)] border border-[var(--color-border)] rounded-xl px-4 py-3 focus:outline-none focus:border-[var(--color-accent)]"
+                />
+              </div>
               <div className="flex items-end gap-3">
                 <button type="submit" className="flex-1 bg-[var(--color-accent)] text-white py-3 rounded-xl font-semibold shadow-sm">Save</button>
                 <button type="button" onClick={() => setIsAdding(false)} className="px-4 py-3 rounded-xl border border-[var(--color-border)] hover:bg-[var(--color-border)]/20">X</button>
@@ -234,6 +244,16 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
                     <p className="text-lg font-medium">{formatCurrency(debt.totalAmount)}</p>
                   </div>
                 </div>
+
+                {debt.monthlyPayment && debt.monthlyPayment > 0 && (
+                  <div className="bg-[var(--color-background)] rounded-2xl p-4 border border-[var(--color-border)] flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-[var(--color-muted)]">
+                      <Calendar className="w-4 h-4" />
+                      Monthly Repayment
+                    </div>
+                    <p className="font-bold text-[var(--color-accent)]">{formatCurrency(debt.monthlyPayment)}</p>
+                  </div>
+                )}
 
                 <div className="h-2 bg-[var(--color-border)]/50 rounded-full overflow-hidden">
                   <motion.div 

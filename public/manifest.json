@@ -3,12 +3,12 @@
   "name": "WealthTrack Finance Manager",
   "icons": [
     {
-      "src": "https://picsum.photos/seed/wealthtrack/192/192",
+      "src": "https://cdn-icons-png.flaticon.com/512/217/217853.png",
       "type": "image/png",
       "sizes": "192x192"
     },
     {
-      "src": "https://picsum.photos/seed/wealthtrack/512/512",
+      "src": "https://cdn-icons-png.flaticon.com/512/217/217853.png",
       "type": "image/png",
       "sizes": "512x512"
     }

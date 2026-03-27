@@ -50,7 +50,8 @@
         "totalAmount": { "type": "number" },
         "remainingAmount": { "type": "number" },
         "dueDate": { "type": "string", "format": "date-time" },
-        "interestRate": { "type": "number" }
+        "interestRate": { "type": "number" },
+        "monthlyPayment": { "type": "number" }
       },
       "required": ["userId", "name", "totalAmount", "remainingAmount"]
     },

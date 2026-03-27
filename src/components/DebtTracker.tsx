@@ -15,6 +15,7 @@ interface DebtTrackerProps {
 export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
   const [activeView, setActiveView] = useState<'debts' | 'loans'>('debts');
   const [isAdding, setIsAdding] = useState(false);
+  const [paymentInputs, setPaymentInputs] = useState<Record<string, string>>({});
 
   // Form states
   const [debtForm, setDebtForm] = useState({ name: '', totalAmount: 0, remainingAmount: 0, dueDate: '', monthlyPayment: 0 });
@@ -268,14 +269,29 @@ export function DebtTracker({ userId, debts, loans }: DebtTrackerProps) {
                     <Calendar className="w-4 h-4" />
                     {debt.dueDate ? `Due ${formatDate(debt.dueDate)}` : 'No due date'}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex items-center gap-2">
                     {debt.remainingAmount > 0 ? (
                       <>
+                        <div className="relative">
+                          <input
+                            type="number"
+                            placeholder="Amount"
+                            value={paymentInputs[debt.id!] || ''}
+                            onChange={(e) => setPaymentInputs({ ...paymentInputs, [debt.id!]: e.target.value })}
+                            className="w-24 px-2 py-1.5 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg text-[10px] focus:outline-none focus:border-[var(--color-accent)]"
+                          />
+                        </div>
                         <button
-                          onClick={() => debt.id && handleUpdateDebt(debt.id, 50)}
-                          className="px-3 py-1.5 bg-[var(--color-background)] border border-[var(--color-border)] rounded-lg text-[10px] font-bold uppercase tracking-wider text-[var(--color-muted)] hover:text-[var(--color-accent)] hover:border-[var(--color-accent)] transition-all"
+                          onClick={() => {
+                            const amount = Number(paymentInputs[debt.id!] || 0);
+                            if (amount > 0 && debt.id) {
+                              handleUpdateDebt(debt.id, amount);
+                              setPaymentInputs({ ...paymentInputs, [debt.id!]: '' });
+                            }
+                          }}
+                          className="px-3 py-1.5 bg-[var(--color-accent)] text-white rounded-lg text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-all"
                         >
-                          Pay {formatCurrency(50)}
+                          Pay
                         </button>
                         <button
                           onClick={() => debt.id && handleUpdateDebt(debt.id, debt.remainingAmount)}
